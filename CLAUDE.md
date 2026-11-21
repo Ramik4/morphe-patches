@@ -127,6 +127,11 @@ birkaç satıra indirilip ayrıntısı `docs/is-gunlugu-arsiv.md`'ye taşınır 
   menus'u silindi, Morphe 5107 + 5123 + 5128 + titreme düzeltmesi uygulandı (RLX Morphe dev.6'da, sığ klonda merge 166
   çakışma verdi). Test APK'ları: yt-music-morphe run 44937607673 (#35), yt-morphe run 44937610296 (#146);
   derleme rlx Build run 44937605077. Onaylanırsa titreme düzeltmesi upstream için ayrı dal olacak.
+- **Kullanıcı onayladı (2026-11-21):** YouTube'da titreme yok, Music'te Glass menus sorunsuz. Upstream titreme dalı
+  **`fix/glass-menus-litho-flicker`** (`cd16dac28`, tek commit, upstream `dev` `d214a06f2` üzerinde; 5128 ile birlikte
+  çakışmasız). Karşılaştırma bağlantısı verildi, PR'ı kullanıcı açacak. RLX'in kendi kodu için yalnızca yerleşim
+  dinleyicili uyarlama: rlx dal `fix/glass-menus-flicker` (`8d30b36a`), **rlx PR 21** (cihazda denenmedi, onaysız
+  birleştirilmez), test APK yt-morphe run 44940099606 (#147). `test/music-glass-menus` yalnızca testti, gereksiz.
 
 ### 2026-11-18: Cam navigasyon çubuğu alt boşluk ve kenar çizgisi ayarları
 
