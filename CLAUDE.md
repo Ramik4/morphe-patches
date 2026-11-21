@@ -56,6 +56,7 @@ Upstream'e (`MorpheApp/morphe-patches`) giden hiçbir dala veya PR'a eklenmez; a
   ve açıklama hazırlanır, kullanıcıya önceden doldurulmuş karşılaştırma bağlantısı verilir:
   `https://github.com/MorpheApp/morphe-patches/compare/dev...RAMiK4:morphe-patches:<dal>?expand=1&title=...&body=...`
 - Commit başlıkları upstream biçimini izler: `feat(YouTube): Add `X` patch`, `fix(YouTube - X): ...`.
+  İki uygulamayı birden etkileyen (`shared-youtube`) değişikliklerde: `fix(YouTube & YouTube Music - X): ...`.
 
 ## Derleme
 
@@ -132,6 +133,8 @@ birkaç satıra indirilip ayrıntısı `docs/is-gunlugu-arsiv.md`'ye taşınır 
   çakışmasız). Karşılaştırma bağlantısı verildi, PR'ı kullanıcı açacak. RLX'in kendi kodu için yalnızca yerleşim
   dinleyicili uyarlama: rlx dal `fix/glass-menus-flicker` (`8d30b36a`), **rlx PR 21** (cihazda denenmedi, onaysız
   birleştirilmez), test APK yt-morphe run 44940099606 (#147). `test/music-glass-menus` yalnızca testti, gereksiz.
+- **Başlıklar (2026-11-21):** iki PR'ın başlığı `fix(YouTube & YouTube Music - Glass menus): ...` olarak verildi
+  (5128'i kullanıcı düzenliyor). Upstream tarafı kullanıcıda; açık kalan yalnızca rlx PR 21'in cihaz onayı.
 
 ### 2026-11-18: Cam navigasyon çubuğu alt boşluk ve kenar çizgisi ayarları
 
