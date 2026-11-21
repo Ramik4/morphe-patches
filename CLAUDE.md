@@ -117,6 +117,9 @@ birkaç satıra indirilip ayrıntısı `docs/is-gunlugu-arsiv.md`'ye taşınır 
   Test APK yt-morphe run 44930971486 (#145).
 - **Kullanıcı onayladı (2026-11-21).** rlx PR 20 `main`'e birleştirildi (squash `6b813a6`). Upstream için karşılaştırma
   bağlantısı verildi (dal `fix/glass-menus-sheet-gap`), PR'ı kullanıcı açacak.
+- **Upstream PR 5128 açıldı.** Çakışma: upstream "YouTube Music Glass menus" (5123) kodu
+  `extensions/shared-youtube/.../shared/patches/glassmenus`'a taşıdı. Upstream `dev` dala merge edildi (force-push yok,
+  git yeniden adlandırmayı kendisi çözdü), değişiklik yeni dosyada; artık Music'in alttaki menülerini de etkiliyor.
 
 ### 2026-11-18: Cam navigasyon çubuğu alt boşluk ve kenar çizgisi ayarları
 
