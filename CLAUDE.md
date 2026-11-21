@@ -134,7 +134,11 @@ birkaç satıra indirilip ayrıntısı `docs/is-gunlugu-arsiv.md`'ye taşınır 
   dinleyicili uyarlama: rlx dal `fix/glass-menus-flicker` (`8d30b36a`), **rlx PR 21** (cihazda denenmedi, onaysız
   birleştirilmez), test APK yt-morphe run 44940099606 (#147). `test/music-glass-menus` yalnızca testti, gereksiz.
 - **Başlıklar (2026-11-21):** iki PR'ın başlığı `fix(YouTube & YouTube Music - Glass menus): ...` olarak verildi
-  (5128'i kullanıcı düzenliyor). Upstream tarafı kullanıcıda; açık kalan yalnızca rlx PR 21'in cihaz onayı.
+  (5128'i kullanıcı düzenliyor). Upstream tarafı kullanıcıda.
+- **rlx PR 21 birleştirildi (2026-11-21, squash `f232b3b`):** kullanıcı cihazda denemeden birleştirmeyi istedi (derleme
+  ve test APK #147 yeşil). RLX hâlâ kendi Glass menus'unu taşıyor; Morphe dev.7+ ile eşitlenirken Morphe'nin Glass
+  menus'u (YouTube + Music) gelecek, iki yama çakışacak: o zaman RLX'inki kaldırılıp Morphe'ninki kullanılmalı
+  (`test/music-glass-menus` bu birleşimin denenmiş hâli; RLX'in TR metinleri Crowdin'den gelmeyene kadar eksik kalır).
 
 ### 2026-11-18: Cam navigasyon çubuğu alt boşluk ve kenar çizgisi ayarları
 
