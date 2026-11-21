@@ -120,6 +120,13 @@ birkaç satıra indirilip ayrıntısı `docs/is-gunlugu-arsiv.md`'ye taşınır 
 - **Upstream PR 5128 açıldı.** Çakışma: upstream "YouTube Music Glass menus" (5123) kodu
   `extensions/shared-youtube/.../shared/patches/glassmenus`'a taşıdı. Upstream `dev` dala merge edildi (force-push yok,
   git yeniden adlandırmayı kendisi çözdü), değişiklik yeni dosyada; artık Music'in alttaki menülerini de etkiliyor.
+- **Music testi ve yorum kutusunda titreme (2026-11-21):** yorum yazarken cam her harfte opak olup geri geliyor.
+  Tahmin: Litho her harfte yeni dolgu bağlıyor, dolgular yalnızca 150 ms'de bir taranıyordu. Düzeltme (henüz Morphe
+  dalında değil): `LithoFills.changes()` sayacı ve `OnGlobalLayoutListener`; yeni dolgu ya da yerleşim olunca aynı
+  karede taranıyor. Test için rlx-patches dal **`test/music-glass-menus`** (`main`'e girmez): RLX'in kendi YouTube Glass
+  menus'u silindi, Morphe 5107 + 5123 + 5128 + titreme düzeltmesi uygulandı (RLX Morphe dev.6'da, sığ klonda merge 166
+  çakışma verdi). Test APK'ları: yt-music-morphe run 44937607673 (#35), yt-morphe run 44937610296 (#146);
+  derleme rlx Build run 44937605077. Onaylanırsa titreme düzeltmesi upstream için ayrı dal olacak.
 
 ### 2026-11-18: Cam navigasyon çubuğu alt boşluk ve kenar çizgisi ayarları
 
