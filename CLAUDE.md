@@ -114,8 +114,9 @@ birkaç satıra indirilip ayrıntısı `docs/is-gunlugu-arsiv.md`'ye taşınır 
 - **Test (kullanıcı kararı):** RLX üzerinden. `RAMiK4/yt-morphe` `release.yml` artık yalnızca `rlx` (Ramik4/rlx-patches
   dal/etiket) ve `publish` alıyor; fork'ta Actions kapalı. RLX'in Glass menus kodu ayrı (`app.rlx...glassmenus.GlassMenus`,
   `LithoDrawables`), düzeltme uyarlandı: rlx-patches dal `fix/glass-menus-sheet-gap` (`a897fde`), **rlx PR 20**
-  (cihaz onayı olmadan birleştirilmez). Test APK yt-morphe run 44930971486 (#145). Onaylanırsa upstream
-  karşılaştırma bağlantısı verilecek.
+  Test APK yt-morphe run 44930971486 (#145).
+- **Kullanıcı onayladı (2026-11-21).** rlx PR 20 `main`'e birleştirildi (squash `6b813a6`). Upstream için karşılaştırma
+  bağlantısı verildi (dal `fix/glass-menus-sheet-gap`), PR'ı kullanıcı açacak.
 
 ### 2026-11-18: Cam navigasyon çubuğu alt boşluk ve kenar çizgisi ayarları
 
