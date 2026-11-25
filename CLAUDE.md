@@ -115,8 +115,14 @@ birkaç satıra indirilip ayrıntısı `docs/is-gunlugu-arsiv.md`'ye taşınır 
   ile hemen alınıyor (dinleyici ilk kareden sonra geliyordu). Debug log: "Glass menu blurs the app itself:".
 - **Bildirimler menüsü satırları (upstream issue 5179):** upstream `dev`'de zaten düzeltilmiş (`5007bbc63`, dev.11'den
   sonra, henüz sürümde değil); test derlemesine giriyor. Music mini oynatıcı kapak (issue 4799) upstream 5117 ile düzeldi.
-- Test APK: yt-morphe run 45579155500 (#157, 128 yama, YouTube 21.46.522; #154-156 iş akışı hatalarıyla düştü).
-  Cihaz denemesi bekleniyor.
+- Test APK #157 (run 45579155500): kullanıcı onayladı (pil tasarrufunda cam, açılış geçişi yok, Bildirimler satırları cam).
+- **Commit `098eec7f2`:** indirmedeki "Lütfen bekleyin" YouTube'un doğrudan gösterdiği `ProgressDialog`
+  (`offline_stream_selection_waiting`, iki metot; DialogFragment değil, kanca ulaşmıyordu):
+  `DownloadProgressDialogFingerprint.matchAll()` + `onProgressDialogShown` (pencere arka planı her opak renk olabilir,
+  köşe ondan). Log (RLX, öncesi): içerik değişirken panel bir kare boş kalıp cam tüm sheet'e yayılıyordu
+  (insets 0,0,0,0); panel boşken eski konum korunuyor. Test APK #158 (run 45595209289), cihaz denemesi bekleniyor.
+- **Varsayılan ayarlar:** Amoled'de RLX kodu yok; RLX `rlx/defaults.json`'dan Morphe'de olanlar (126, saf siyah/beyaz,
+  RLX logo/ad/renk ve Yandex VOT hariç) yt-morphe `morphe-test/settings.json` (PR 48), kullanıcı içe aktaracak.
 
 ### 2026-11-21: Glass menus (upstream PR 5107) alttaki menülerde üstte fazla boşluk
 
