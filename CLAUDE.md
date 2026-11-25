@@ -123,6 +123,11 @@ birkaç satıra indirilip ayrıntısı `docs/is-gunlugu-arsiv.md`'ye taşınır 
   (insets 0,0,0,0); panel boşken eski konum korunuyor. Test APK #158 (run 45595209289), cihaz denemesi bekleniyor.
 - **Varsayılan ayarlar:** Amoled'de RLX kodu yok; RLX `rlx/defaults.json`'dan Morphe'de olanlar (126, saf siyah/beyaz,
   RLX logo/ad/renk ve Yandex VOT hariç) yt-morphe `morphe-test/settings.json` (PR 48), kullanıcı içe aktaracak.
+- Test #158: "Lütfen bekleyin" kısmen cam (tema arka planları siyah kalmıştı). Commit `8193fed11`: progress dialog'da
+  içerideki ve içerik ile decor arasındaki tüm opak dolgular gizleniyor (`hideAllFills`); ayarın "pil tasarrufu" onay
+  penceresi kaldırıldı (Android 14+'da artık doğru değil). Test APK #159 (run 45611154919), cihazda denenmedi.
+- **Upstream PR dalı `fix/glass-menus-battery-saver`** (`2a62a1add`, tek commit, upstream `dev` `8822fdf13` üzerinde).
+  Karşılaştırma bağlantısı verildi, PR'ı kullanıcı açacak.
 
 ### 2026-11-21: Glass menus (upstream PR 5107) alttaki menülerde üstte fazla boşluk
 
