@@ -346,6 +346,15 @@ public final class GlassMenusPatch {
                 // Views inside the panel with the color of the window background are not drawn over the glass.
                 surface.menuColors.add(color);
                 surface.setRadius(radius);
+                if (anyColor) {
+                    // The views of a progress dialog, and the views around its content, each have the background
+                    // of the dialog theme, also the small ones such as the message and the progress circle.
+                    surface.hideAllFills = true;
+                    for (Object parent = content.getParent(); parent instanceof View view && view != decor;
+                         parent = view.getParent()) {
+                        surface.hideIfSolid(view.getBackground());
+                    }
+                }
             }
         } catch (Throwable ex) {
             Logger.printException(() -> "styleWindowPanel failure", ex);
@@ -520,6 +529,11 @@ public final class GlassMenusPatch {
          * If the glass is drawn only where the fills of the menu color are, and not over the whole view.
          */
         private final boolean findPanel;
+
+        /**
+         * If every opaque fill inside the view is hidden, of any color and size, such as in a progress dialog.
+         */
+        private boolean hideAllFills;
 
         @Nullable
         static GlassSurface apply(View view, int corners) {
@@ -834,7 +848,9 @@ public final class GlassMenusPatch {
             for (int i = 0, count = group.getChildCount(); i < count; i++) {
                 View child = group.getChildAt(i);
                 Drawable background = child.getBackground();
-                if (background instanceof NinePatchDrawable && child.getWidth() == view.getWidth()
+                if (hideAllFills) {
+                    hideIfSolid(background);
+                } else if (background instanceof NinePatchDrawable && child.getWidth() == view.getWidth()
                         && child.getHeight() == view.getHeight()) {
                     // A frame with the shadow of the menu. The shadow is drawn under the whole menu,
                     // so it would darken the glass.
@@ -883,6 +899,21 @@ public final class GlassMenusPatch {
             }
             if (hidden) drawable.invalidateSelf();
             return true;
+        }
+
+        /**
+         * Hides a drawable that fills its bounds with one opaque color.
+         */
+        void hideIfSolid(@Nullable Drawable drawable) {
+            if (drawable == null) return;
+            List<Drawable> chain = new ArrayList<>();
+            if (Color.alpha(SolidColors.colorOf(drawable, chain)) < 0xF0) return;
+
+            boolean hidden = false;
+            for (Drawable link : chain) {
+                hidden |= hide(link);
+            }
+            if (hidden) drawable.invalidateSelf();
         }
 
         /**
