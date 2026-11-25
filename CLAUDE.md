@@ -106,8 +106,8 @@ birkaç satıra indirilip ayrıntısı `docs/is-gunlugu-arsiv.md`'ye taşınır 
 
 - **Test ortamı (kullanıcı kararı, 2026-11-25):** Morphe yama testleri artık **Amoled `app.morphe.android.youtube`**
   varyantında; RLX testleri Original BBK'da kalıyor. `RAMiK4/yt-morphe` `release.yml`'e `morphe` girdisi eklendi
-  (yt-morphe PR 44, birleşti): `morphe=RAMiK4/morphe-patches@<dal>`, `publish` kapalı; yalnızca resmi yamalar, ek/extras
-  yok, yalnızca Amoled. `rlx` girdisi bu modda kullanılmıyor. Fork'ta Actions hâlâ kapalı (derleme kontrolü çalışmıyor).
+  (yt-morphe PR 44-47, birleşti): `morphe=RAMiK4/morphe-patches@<dal>`, `publish` kapalı; seçenek dosyası verilmeden
+  Morphe'nin varsayılan yamaları (Manager gibi), ek/extras yok, yalnızca Amoled. `rlx` girdisi bu modda kullanılmıyor. Fork'ta Actions hâlâ kapalı (derleme kontrolü çalışmıyor).
 - **Dal `claude/morphe-patches-glass-blur-95z7ct`** (`afc5360a3`, upstream `dev` `e09ea081d` üzerinde):
   pil tasarrufunda sistem pencere bulanıklığını kapatıyor (menü %92 opak oluyordu); Android 14+'da menü arkadaki
   activity penceresini kendisi bulanıklaştırıyor (`GlassMenusPatch.Backdrop`, RenderNode + RenderEffect, karartma
@@ -115,7 +115,8 @@ birkaç satıra indirilip ayrıntısı `docs/is-gunlugu-arsiv.md`'ye taşınır 
   ile hemen alınıyor (dinleyici ilk kareden sonra geliyordu). Debug log: "Glass menu blurs the app itself:".
 - **Bildirimler menüsü satırları (upstream issue 5179):** upstream `dev`'de zaten düzeltilmiş (`5007bbc63`, dev.11'den
   sonra, henüz sürümde değil); test derlemesine giriyor. Music mini oynatıcı kapak (issue 4799) upstream 5117 ile düzeldi.
-- Test APK: yt-morphe run 45577476919 (#154). Cihaz denemesi bekleniyor.
+- Test APK: yt-morphe run 45579155500 (#157, 128 yama, YouTube 21.46.522; #154-156 iş akışı hatalarıyla düştü).
+  Cihaz denemesi bekleniyor.
 
 ### 2026-11-21: Glass menus (upstream PR 5107) alttaki menülerde üstte fazla boşluk
 
