@@ -7,8 +7,10 @@
 
 package app.morphe.extension.shared.patches.glassmenus;
 
+import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.content.res.Resources;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -20,7 +22,11 @@ import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
+import android.graphics.RecordingCanvas;
 import android.graphics.RectF;
+import android.graphics.RenderEffect;
+import android.graphics.RenderNode;
+import android.graphics.Shader;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.LayerDrawable;
@@ -75,7 +81,8 @@ import app.morphe.extension.shared.ui.Dim;
  * Only the content behind the menu is blurred ({@link BlurRegion}), and the menu is a translucent tint of the app
  * background with a light rim, so the blurred content shows through it. The rest of the screen is only dimmed, as
  * without the glass. The system turns the blur off when the device does not support it or while the battery saver
- * is on; the menu is then nearly opaque, so it stays readable.
+ * is on. On Android 14 and later the menu then blurs the screen of the app behind it itself ({@link Backdrop});
+ * otherwise the menu is nearly opaque, so it stays readable.
  * <p>
  * The content of the menu keeps its views. Backgrounds inside the menu that have the color of the menu are removed,
  * so they do not hide the glass. Items keep their ripples and their selected state.
@@ -464,6 +471,12 @@ public final class GlassMenusPatch {
 
         @Nullable
         private Drawable blur;
+        /**
+         * Blurs the screen of the app behind the menu while the system does not, such as with the battery saver.
+         * Android 14 and later only.
+         */
+        @Nullable
+        private final Backdrop backdrop;
         @Nullable
         private WindowManager windowManager;
         private boolean blurEnabled;
@@ -493,6 +506,9 @@ public final class GlassMenusPatch {
 
             originalBackground = view.getBackground();
             tint = new GlassDrawable(corners == CORNERS_NONE ? 0 : cornerRadiusOf(originalBackground));
+            backdrop = Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE
+                    ? new Backdrop(view, blurRadiusPx(), this::updateOpacity)
+                    : null;
             updateOpacity();
 
             menuColors.addAll(menuColors(view.getContext()));
@@ -529,20 +545,25 @@ public final class GlassMenusPatch {
                 // The blur belongs to the window the view is attached to.
                 WindowManager manager = view.getContext().getSystemService(WindowManager.class);
                 windowManager = manager;
+                if (backdrop != null) {
+                    backdrop.attach();
+                }
                 blur = BlurRegion.create(view);
                 if (blur != null) {
                     setBackgroundLayers();
                     if (BlurRegion.isSamsungWindowBlurSupported()) {
                         onBlurEnabledChanged(true);
+                    } else if (manager != null) {
+                        // The listener gets the current state only after the first frame of the menu is drawn,
+                        // so the state is set now, or the menu is first drawn without the glass.
+                        onSystemBlurEnabledChanged(manager.isCrossWindowBlurEnabled());
+                        // Called again when the system turns the blur on or off.
+                        manager.addCrossWindowBlurEnabledListener(blurListener);
                     } else {
-                        BlurRegion.setBlurRadius(blur, 0);
-                        // Called right away with the current state, and again when the system turns the blur
-                        // on or off.
-                        if (manager != null) {
-                            manager.addCrossWindowBlurEnabledListener(blurListener);
-                        }
+                        onBlurEnabledChanged(false);
                     }
                 }
+                updateBackdrop();
                 updateCorners(true);
                 attachedTime = SystemClock.uptimeMillis();
                 view.getViewTreeObserver().addOnPreDrawListener(this);
@@ -572,8 +593,11 @@ public final class GlassMenusPatch {
                     blur = null;
                     blurEnabled = false;
                     setBackgroundLayers();
-                    updateOpacity();
                 }
+                if (backdrop != null) {
+                    backdrop.detach();
+                }
+                updateOpacity();
                 windowManager = null;
             } catch (Throwable ex) {
                 Logger.printException(() -> "GlassSurface detach failure", ex);
@@ -584,9 +608,11 @@ public final class GlassMenusPatch {
          * The background of the view: the blur and the tint, both drawn within the panel of the menu.
          */
         private void setBackgroundLayers() {
-            layers = new LayerDrawable(blur != null
-                    ? new Drawable[]{blur, tint}
-                    : new Drawable[]{tint});
+            List<Drawable> drawables = new ArrayList<>(3);
+            if (blur != null) drawables.add(blur);
+            if (backdrop != null) drawables.add(backdrop);
+            drawables.add(tint);
+            layers = new LayerDrawable(drawables.toArray(new Drawable[0]));
             setLayerInsets();
             view.setBackground(layers);
         }
@@ -679,11 +705,23 @@ public final class GlassMenusPatch {
             if (blur != null) {
                 BlurRegion.setBlurRadius(blur, enabled ? blurRadiusPx() : 0);
             }
+            updateBackdrop();
             updateOpacity();
         }
 
+        /**
+         * The menu blurs the screen of the app itself only while the system does not blur behind it.
+         */
+        private void updateBackdrop() {
+            if (backdrop == null) return;
+            final boolean active = !(blurEnabled && blur != null) && view.isAttachedToWindow();
+            Logger.printDebug(() -> "Glass menu blurs the app itself: " + active);
+            backdrop.setActive(active);
+        }
+
         private void updateOpacity() {
-            tint.setOpacityPercent(blurEnabled && blur != null
+            final boolean blurred = (blurEnabled && blur != null) || (backdrop != null && backdrop.isDrawn());
+            tint.setOpacityPercent(blurred
                     ? opacityPercent()
                     : Math.max(opacityPercent(), MIN_OPACITY_WITHOUT_BLUR));
         }
@@ -709,6 +747,7 @@ public final class GlassMenusPatch {
                 removeMenuBackgrounds(view);
                 if (scanLitho) hideLithoFills();
                 updatePanel();
+                if (backdrop != null) backdrop.onPreDraw();
             } catch (Throwable ex) {
                 Logger.printException(() -> "GlassSurface onPreDraw failure", ex);
             }
@@ -867,6 +906,192 @@ public final class GlassMenusPatch {
                 if (isSimilarOpaqueColor(color, menu)) return true;
             }
             return false;
+        }
+    }
+
+    /**
+     * @return The window of the activity behind a menu, if the menu is in a window of its own.
+     */
+    @Nullable
+    private static View appWindowBehind(View menu) {
+        Context context = menu.getContext();
+        for (int depth = 0; depth < 10 && context != null; depth++) {
+            if (context instanceof Activity activity) {
+                Window window = activity.getWindow();
+                View decor = window == null ? null : window.peekDecorView();
+                // A menu in the window of the activity would draw itself into its own background.
+                return decor != null && decor != menu.getRootView() ? decor : null;
+            }
+            context = context instanceof ContextWrapper wrapper ? wrapper.getBaseContext() : null;
+        }
+        return null;
+    }
+
+    /**
+     * The screen of the app behind a menu, blurred by the menu itself, for when the system does not blur behind the
+     * window of the menu, such as while the battery saver is on. The views of the activity are recorded again into a
+     * blurred render node each time the menu or the activity is drawn. The node only refers to the drawings of the
+     * views, so it is fast. Videos and other windows are not part of it.
+     * <p>
+     * Android 14 and later only: on Android 12 and 13 a blur render effect that is redrawn can crash the app.
+     */
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    private static final class Backdrop extends Drawable {
+        /**
+         * How long the dim of the window takes to fade in.
+         */
+        private static final long DIM_FADE_MS = 200;
+
+        private final View target;
+        private final Runnable onDrawnChanged;
+        private final RenderNode node = new RenderNode("GlassMenuBackdrop");
+        @ColorInt
+        private final int background = ThemeUtils.getAppBackgroundColor();
+        private final int[] targetLocation = new int[2];
+        private final int[] sourceLocation = new int[2];
+        private final int[] lastTargetLocation = new int[2];
+        private final ViewTreeObserver.OnDrawListener sourceDrawListener;
+        @Nullable
+        private View source;
+        @Nullable
+        private ViewTreeObserver sourceObserver;
+        private boolean active;
+        private long attachedTime;
+
+        Backdrop(View target, float blurRadius, Runnable onDrawnChanged) {
+            this.target = target;
+            this.onDrawnChanged = onDrawnChanged;
+            node.setRenderEffect(RenderEffect.createBlurEffect(blurRadius, blurRadius, Shader.TileMode.CLAMP));
+            // The window of the activity is drawn again, so the blurred copy is too.
+            sourceDrawListener = target::postInvalidateOnAnimation;
+        }
+
+        void attach() {
+            removeSourceListener();
+            source = appWindowBehind(target);
+            attachedTime = SystemClock.uptimeMillis();
+            Logger.printDebug(() -> "Glass menu app window behind: " + source);
+            if (active) addSourceListener();
+        }
+
+        void detach() {
+            setActive(false);
+            removeSourceListener();
+            source = null;
+        }
+
+        /**
+         * @return If the blurred app is drawn.
+         */
+        boolean isDrawn() {
+            return active && source != null;
+        }
+
+        void setActive(boolean active) {
+            if (this.active == active) return;
+            final boolean wasDrawn = isDrawn();
+            this.active = active;
+            if (active) {
+                addSourceListener();
+            } else {
+                removeSourceListener();
+            }
+            if (wasDrawn != isDrawn()) {
+                onDrawnChanged.run();
+                invalidateSelf();
+            }
+        }
+
+        /**
+         * The view is not drawn again when it only moves, such as while a bottom sheet slides in,
+         * but what is behind it changes.
+         */
+        void onPreDraw() {
+            if (!isDrawn()) return;
+            target.getLocationOnScreen(targetLocation);
+            if (targetLocation[0] != lastTargetLocation[0] || targetLocation[1] != lastTargetLocation[1]) {
+                lastTargetLocation[0] = targetLocation[0];
+                lastTargetLocation[1] = targetLocation[1];
+                target.invalidate();
+            }
+        }
+
+        private void addSourceListener() {
+            if (source == null || sourceObserver != null) return;
+            ViewTreeObserver observer = source.getViewTreeObserver();
+            if (!observer.isAlive()) return;
+            observer.addOnDrawListener(sourceDrawListener);
+            sourceObserver = observer;
+        }
+
+        private void removeSourceListener() {
+            if (sourceObserver != null && sourceObserver.isAlive()) {
+                sourceObserver.removeOnDrawListener(sourceDrawListener);
+            }
+            sourceObserver = null;
+        }
+
+        @Override
+        public void draw(@NonNull Canvas canvas) {
+            View current = source;
+            if (!active || current == null || !current.isAttachedToWindow() || !canvas.isHardwareAccelerated()) {
+                return;
+            }
+            Rect bounds = getBounds();
+            final int width = bounds.width();
+            final int height = bounds.height();
+            if (width <= 0 || height <= 0) return;
+
+            target.getLocationOnScreen(targetLocation);
+            current.getLocationOnScreen(sourceLocation);
+            lastTargetLocation[0] = targetLocation[0];
+            lastTargetLocation[1] = targetLocation[1];
+            node.setPosition(0, 0, width, height);
+            RecordingCanvas recording = node.beginRecording(width, height);
+            try {
+                // Without a color below, blurred text would be mostly clear and the sharp text would show.
+                recording.drawColor(background);
+                recording.translate(sourceLocation[0] - targetLocation[0] - bounds.left,
+                        sourceLocation[1] - targetLocation[1] - bounds.top);
+                current.draw(recording);
+            } finally {
+                node.endRecording();
+            }
+
+            final int saveCount = canvas.save();
+            canvas.translate(bounds.left, bounds.top);
+            canvas.clipRect(0, 0, width, height);
+            canvas.drawRenderNode(node);
+            // The system blurs the dim behind the window too.
+            final float dim = dimAmount();
+            if (dim > 0) {
+                canvas.drawColor(Color.argb(Math.round(255 * dim), 0, 0, 0));
+            }
+            canvas.restoreToCount(saveCount);
+        }
+
+        private float dimAmount() {
+            if (!(target.getRootView().getLayoutParams() instanceof WindowManager.LayoutParams params)
+                    || (params.flags & WindowManager.LayoutParams.FLAG_DIM_BEHIND) == 0) {
+                return 0;
+            }
+            final float fade = Math.min(1f, (SystemClock.uptimeMillis() - attachedTime) / (float) DIM_FADE_MS);
+            if (fade < 1) target.postInvalidateOnAnimation();
+            return params.dimAmount * fade;
+        }
+
+        @Override
+        public void setAlpha(int alpha) {
+        }
+
+        @Override
+        public void setColorFilter(@Nullable ColorFilter colorFilter) {
+        }
+
+        @Deprecated
+        @Override
+        public int getOpacity() {
+            return PixelFormat.TRANSLUCENT;
         }
     }
 
