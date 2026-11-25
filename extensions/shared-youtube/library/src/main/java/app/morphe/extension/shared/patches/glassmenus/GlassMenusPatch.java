@@ -296,25 +296,57 @@ public final class GlassMenusPatch {
             if (window == null) return;
             View decor = window.getDecorView();
             // After the fragment sets the window background, right after it shows the dialog.
-            decor.post(() -> styleWindowPanel(window, decor));
+            decor.post(() -> styleWindowPanel(window, decor, false));
         } catch (Throwable ex) {
             Logger.printException(() -> "onDialogShown failure", ex);
         }
     }
 
+    /**
+     * Injection point (YouTube only): a progress dialog of the app was shown, such as "Please wait" before the
+     * download quality menu. It is shown for a moment only, so it is drawn as glass from its first frame: its
+     * window background is already set when it is shown. Its background is a dialog color, not a menu color.
+     */
+    public static void onProgressDialogShown(@Nullable Dialog dialog) {
+        if (dialog == null || !isEnabled()) return;
+
+        try {
+            Window window = dialog.getWindow();
+            if (window == null) return;
+            styleWindowPanel(window, window.getDecorView(), true);
+        } catch (Throwable ex) {
+            Logger.printException(() -> "onProgressDialogShown failure", ex);
+        }
+    }
+
+    /**
+     * @param anyColor If the window background can be of any opaque color, and not only of a menu color.
+     */
     @RequiresApi(Build.VERSION_CODES.S)
-    private static void styleWindowPanel(Window window, View decor) {
+    private static void styleWindowPanel(Window window, View decor, boolean anyColor) {
         try {
             if (window.getAttributes().height != WindowManager.LayoutParams.WRAP_CONTENT) return;
 
             View content = decor.findViewById(android.R.id.content);
             Drawable background = decor.getBackground();
             if (content == null || background == null || glassViews.contains(content)) return;
-            if (!isMenuColor(decor.getContext(), SolidColors.colorOf(background))) return;
+            final int color = SolidColors.colorOf(background);
+            if (anyColor ? Color.alpha(color) < 0xF0 : !isMenuColor(decor.getContext(), color)) {
+                Logger.printDebug(() -> "Dialog is not a panel of the menu color: "
+                        + String.format(Locale.US, "#%08X", color) + " " + background);
+                return;
+            }
 
+            // The panel keeps the shape of the window background.
+            final float radius = cornerRadiusOf(background);
             window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
             window.setDimAmount(dimAmount());
-            GlassSurface.apply(content, CORNERS_AUTO);
+            GlassSurface surface = GlassSurface.apply(content, CORNERS_AUTO);
+            if (surface != null) {
+                // Views inside the panel with the color of the window background are not drawn over the glass.
+                surface.menuColors.add(color);
+                surface.setRadius(radius);
+            }
         } catch (Throwable ex) {
             Logger.printException(() -> "styleWindowPanel failure", ex);
         }
@@ -489,14 +521,25 @@ public final class GlassMenusPatch {
          */
         private final boolean findPanel;
 
-        static void apply(View view, int corners) {
-            apply(view, corners, false);
+        @Nullable
+        static GlassSurface apply(View view, int corners) {
+            return apply(view, corners, false);
         }
 
-        static void apply(View view, int corners, boolean findPanel) {
-            if (glassViews.add(view)) {
-                new GlassSurface(view, corners, findPanel);
-            }
+        /**
+         * @return The glass of the view, or null if the view is already drawn as glass.
+         */
+        @Nullable
+        static GlassSurface apply(View view, int corners, boolean findPanel) {
+            return glassViews.add(view)
+                    ? new GlassSurface(view, corners, findPanel)
+                    : null;
+        }
+
+        void setRadius(float radius) {
+            if (corners == CORNERS_NONE || radius == tint.radius) return;
+            tint.setRadius(radius);
+            updateCorners(true);
         }
 
         private GlassSurface(View view, int corners, boolean findPanel) {
@@ -660,6 +703,12 @@ public final class GlassMenusPatch {
                     largestArea = area;
                     largest = drawable;
                 }
+            }
+
+            // While the app replaces the content of the sheet, such as when a nested menu opens, no fill may be
+            // mounted for a frame. The glass then stays where the panel was, and does not cover the whole sheet.
+            if (panel.isEmpty() && (panelInsets.left | panelInsets.top | panelInsets.right | panelInsets.bottom) != 0) {
+                return;
             }
 
             boolean changed = false;
